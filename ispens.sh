@@ -1,3 +1,5 @@
+#!/bin/bash
+
 hostnamectl set-hostname isp; exec bash
 mkdir /etc/net/ifaces/ens19
 mkdir /etc/net/ifaces/ens20
