@@ -1,0 +1,62 @@
+en
+con
+hostname br-rtr.au-team.irpo
+interface ISP
+ip address 172.16.2.2/28
+exit
+port te0
+service-instance te0/ISP
+encapsulation untagged
+connect ip interface ISP
+end
+con
+interface int1
+ip address 192.168.1.1/28
+exit
+port te1
+service-instance te1/int1
+encapsulation untagged
+connect ip interface int1
+end
+con
+ip route 0.0.0.0/0 172.16.2.1
+interface tunnel.0
+ip address 10.10.10.2/30
+ip tunnel 172.16.2.2 172.16.1.2 mode gre
+end
+con
+router ospf 1
+ospf router-id 10.10.10.2
+passive-interface default
+no passive-interface tunnel.0
+no passive-interface int1
+network 10.10.10.0/30 area 0
+network 192.168.1.0/28 area 0
+end
+con
+interface tunnel.0
+ip ospf authentication message-digest
+ip ospf message-digest-key 1 md5 P@ssw0rd
+end
+con
+ntp timezone utc+5
+end
+con
+username net_admin
+password P@ssw0rd
+role admin
+end
+con
+interface ISP
+ip nat outside
+interface int1
+ip nat inside
+exit
+ip nat pool BR-RTR 192.168.1.1-192.168.1.14
+ip nat source dynamic inside-to-outside pool BR-RTR overload interface ISP
+end
+con
+pppoe-profile 1
+dns ipv4 192.168.100.2
+end
+wr
