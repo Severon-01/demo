@@ -1,0 +1,37 @@
+#!/bin/bash
+hostnamectl set-hostname isp
+exec bash
+mkdir -p /etc/net/ifaces/enp2s1
+mkdir -p /etc/net/ifaces/enp2s2
+mkdir -p /etc/net/ifaces/enp2s3
+cd /etc/net/ifaces/enp2s1/
+cat > options << EOF
+BOOTPROTO=dhcp
+TYPE=eth
+EOF
+echo "nameserver 8.8.8.8" >> /etc/resolv.conf
+systemctl restart network
+echo "172.16.1.1/28" > /etc/net/ifaces/enp2s2/ipv4address
+cd /etc/net/ifaces/enp2s2/
+cat > options << EOF
+TYPE=eth
+BOOTPROTO=static
+ONBOOT=yes
+EOF
+echo "172.16.2.1/28" > /etc/net/ifaces/enp2s3/ipv4address
+cd /etc/net/ifaces/enp2s3/
+cat > options << EOF
+TYPE=eth
+BOOTPROTO=static
+ONBOOT=yes
+EOF
+apt-get update && apt-get install -y iptables && apt-get install -y tzdata
+sleep 15
+cd
+iptables -t nat -A POSTROUTING -s 172.16.1.0/28 -o enp2s1 -j MASQUERADE
+iptables -t nat -A POSTROUTING -s 172.16.2.0/28 -o enp2s1 -j MASQUERADE
+iptables-save >> /etc/sysconfig/iptables
+systemctl enable --now iptables
+timedatectl set-timezone Asia/Yekaterinburg
+sed -i "s/net.ipv4.ip_forward = 0/net.ipv4.ip_forward = 1/g" /etc/net/sysctl.conf
+systemctl restart network
